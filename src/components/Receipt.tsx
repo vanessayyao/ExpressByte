@@ -11,13 +11,6 @@ const BARS = [
 
 const money = (n: number) => `$${n.toFixed(2)}`
 
-// Each new piece of the receipt "feeds" out: it grows from zero height.
-const printIn = {
-  initial: { height: 0, opacity: 0 },
-  animate: { height: 'auto', opacity: 1 },
-  transition: { duration: 0.7, ease: [0.3, 0.7, 0.3, 1] as const },
-}
-
 function Line({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
     <div className={`line ${className ?? ''}`}>
@@ -29,23 +22,18 @@ function Line({ label, value, className }: { label: string; value: string; class
 }
 
 type ReceiptProps = {
-  /** Ids of the sections whose lines have printed. */
-  printed: Set<string>
-  /** Slide the paper out of the slot on first load (hero receipt only). */
-  feedOnLoad?: boolean
-  /** The hero receipt holds the page's <h1>; the mini copy doesn't. */
-  isMain?: boolean
+  /** Opens a section's pop-up, with the same animation as clicking it in the basket. */
+  onOpen: (section: string) => void
 }
 
-export default function Receipt({ printed, feedOnLoad = false, isMain = false }: ReceiptProps) {
-  const items = ITEMS.filter((i) => printed.has(i.id))
-  const complete = items.length === ITEMS.length
-
-  const subtotal = items.reduce((sum, i) => sum + i.price, 0)
+/**
+ * The full receipt: every section is listed, and clicking a line plays that
+ * section's animation. It slides out of the printer slot once, on page load.
+ */
+export default function Receipt({ onOpen }: ReceiptProps) {
+  const subtotal = ITEMS.reduce((sum, i) => sum + i.price, 0)
   const tax = Math.round(subtotal * TAX_RATE * 100) / 100
   const total = subtotal + tax
-
-  const Brand = isMain ? 'h1' : 'p'
 
   return (
     <div className="printer">
@@ -56,52 +44,50 @@ export default function Receipt({ printed, feedOnLoad = false, isMain = false }:
       <div className="paper-window">
         <motion.nav
           className="paper"
-          aria-label={isMain ? 'Main navigation' : 'Section navigation'}
-          initial={feedOnLoad ? { y: '-100%' } : false}
+          aria-label="Main navigation"
+          initial={{ y: '-100%' }}
           animate={{ y: 0 }}
           transition={{ duration: 1.4, ease: [0.22, 0.8, 0.3, 1], delay: 0.2 }}
         >
-          <Brand className="brand">
+          <h1 className="brand">
             <a href="#home">ExpressByte</a>
-          </Brand>
+          </h1>
+          <p className="tagline">click below to learn more!</p>
 
           <ul className="items">
-            {items.map((item) => (
-              <motion.li key={item.id} {...printIn} style={{ overflow: 'hidden' }}>
-                <a href={`#${item.id}`} className="line item-link">
+            {ITEMS.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className="line item-link"
+                  aria-haspopup="dialog"
+                  onClick={() => onOpen(item.id)}
+                >
                   <span className="line-label">1 x {item.label}</span>
                   <span className="leader" aria-hidden="true" />
                   <span className="line-price">{money(item.price)}</span>
-                </a>
-              </motion.li>
+                </button>
+              </li>
             ))}
           </ul>
 
-          {complete && (
-            <motion.div
-              {...printIn}
-              transition={{ ...printIn.transition, duration: 1.1, delay: 0.5 }}
-              style={{ overflow: 'hidden' }}
-            >
-              <div className="totals">
-                <Line label="Subtotal:" value={money(subtotal)} />
-                <Line label={`Tax (${TAX_RATE * 100}%):`} value={money(tax)} />
-                <Line label="Total:" value={money(total)} className="total" />
-              </div>
+          <div className="totals">
+            <Line label="Subtotal:" value={money(subtotal)} />
+            <Line label={`Tax (${TAX_RATE * 100}%):`} value={money(tax)} />
+            <Line label="Total:" value={money(total)} className="total" />
+          </div>
 
-              <p className="thanks">
-                Thank you for shopping with us.
-                <br />
-                Enjoy Every Byte!
-              </p>
+          <p className="thanks">
+            Thank you for shopping with us.
+            <br />
+            Enjoy Every Byte!
+          </p>
 
-              <div className="barcode" aria-hidden="true">
-                {BARS.map((w, i) => (
-                  <span key={i} style={{ width: w * 2, marginRight: i % 3 === 0 ? 3 : 2 }} />
-                ))}
-              </div>
-            </motion.div>
-          )}
+          <div className="barcode" aria-hidden="true">
+            {BARS.map((w, i) => (
+              <span key={i} style={{ width: `${w * 0.11}em`, marginRight: `${i % 3 === 0 ? 0.16 : 0.11}em` }} />
+            ))}
+          </div>
         </motion.nav>
       </div>
     </div>

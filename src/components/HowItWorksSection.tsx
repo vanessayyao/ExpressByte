@@ -1,8 +1,8 @@
 import { motion } from 'motion/react'
 import type { HTMLMotionProps } from 'motion/react'
 import type { ReactNode } from 'react'
-import brickImg from '../assets/noodle-brick.jpg'
-import frameImg from '../assets/noodle-frame.jpg'
+import brickImg from '../assets/noodle-brick.png'
+import frameImg from '../assets/noodle-frame.png'
 
 /** Mint label stuck across the noodle brick. */
 export function HowBadge({ className = '', id, ...props }: HTMLMotionProps<'div'> & { id?: string }) {
@@ -56,27 +56,5 @@ export function NoodleFrame({ className = '', ...props }: CardProps) {
         </p>
       </div>
     </motion.div>
-  )
-}
-
-export default function HowItWorksSection() {
-  const rise = {
-    initial: { opacity: 0, y: 40 },
-    whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, amount: 0.3 },
-  }
-
-  return (
-    <section id="how-it-works" className="page how">
-      <NoodleBrick {...rise} transition={{ duration: 0.8, ease: 'easeOut' }}>
-        <HowBadge
-          initial={{ opacity: 0, scale: 0.6, rotate: -14 }}
-          whileInView={{ opacity: 1, scale: 1, rotate: -3 }}
-          viewport={{ once: true, amount: 0.6 }}
-          transition={{ type: 'spring', stiffness: 170, damping: 13, delay: 0.35 }}
-        />
-      </NoodleBrick>
-      <NoodleFrame {...rise} transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }} />
-    </section>
   )
 }

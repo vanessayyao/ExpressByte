@@ -1,18 +1,15 @@
-/* ---------- Layout: pinned receipt on the left, sections on the right ---------- */
+/* ---------- Layout: receipt on the left, basket on the right, one screen ---------- */
 .layout {
   display: grid;
-  grid-template-columns: minmax(300px, 37fr) 63fr;
+  grid-template-columns: minmax(300px, 41fr) 59fr;
+  align-items: center;
   gap: clamp(1.5rem, 4vw, 4rem);
   max-width: 1500px;
+  height: 100vh;
+  height: 100dvh;
   margin: 0 auto;
   padding: 0 clamp(1rem, 3vw, 3rem) 0 clamp(1.5rem, 6vw, 6rem);
-}
-
-.receipt-rail {
-  position: sticky;
-  top: clamp(1rem, 7vh, 6rem);
-  align-self: start;
-  padding-top: clamp(1rem, 2vh, 1rem);
+  overflow: clip; /* a lifted basket item never adds a scrollbar */
 }
 
 .content {
@@ -21,15 +18,16 @@
 
 /* ---------- Home ---------- */
 .home {
-  min-height: 100vh;
-  padding-top: clamp(2rem, 9vh, 7rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* Never taller than the screen: width is capped by the height available. */
 .basket {
   position: relative;
   width: 100%;
-  max-width: 1000px;
-  margin-top: 1.5rem;
+  max-width: min(1000px, calc((100dvh - 4rem) * 1140 / 970));
   user-select: none;
 }
 
@@ -37,8 +35,6 @@
   display: block;
   width: 100%;
   height: auto;
-  /* Lets the white background of the artwork disappear into the page. */
-  mix-blend-mode: multiply;
 }
 
 /* Each grocery item is a copy of the basket image clipped to that item's
@@ -47,7 +43,29 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  transition: filter 0.25s ease;
+  transition: filter 0.25s ease, opacity 0.2s ease;
+}
+
+/* While its pop-up plays, the item is out of the basket (its copy is the one
+   animating). */
+.basket-item-layer.is-away {
+  opacity: 0;
+}
+
+/* The spot an item leaves behind: its exact shape, in the dark blue of the
+   basket's shadowy floor. */
+.basket-hole {
+  position: absolute;
+  background: radial-gradient(ellipse at 50% 45%, #1c3a68, #10264a);
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.basket-hole.is-open {
+  opacity: 1;
 }
 
 .basket-item-layer:has(.basket-item:hover),
@@ -67,10 +85,10 @@
   transition: transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
-.basket-item img {
+/* The item's own cut-out, placed exactly over it in the picture. */
+.basket-item-cut {
+  position: absolute;
   display: block;
-  width: 100%;
-  height: 100%;
 }
 
 .basket-item:hover,
@@ -79,82 +97,169 @@
   transform: translateY(-2.5%) scale(1.12) rotate(-3deg);
 }
 
-/* ---------- Section pop-up ---------- */
-html.popup-open {
-  overflow: hidden;
-}
-
-.popup-backdrop {
+/* ---------- Landing screen: sky and hills between slim red borders ---------- */
+.loader {
   position: fixed;
   inset: 0;
-  z-index: 100;
-  display: grid;
-  place-items: center;
-  padding: 2rem 1rem;
-  background: rgba(30, 24, 10, 0.45);
-  backdrop-filter: blur(3px);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  background: #f05258;
+  /* The red shows as a slim border above and below the scene. */
+  padding: clamp(10px, 2.4vh, 24px) 0;
 }
 
-/* Same proportions as the original About Us mockup (1780 × 966). The panel
-   itself is invisible; its two paper halves ("leaves") make up the card. */
-.popup-panel {
-  --card-paper: #fffcf3;
-  --card-radius: 22px;
+.loader-scene {
   position: relative;
-  container-type: inline-size;
-  width: min(94vw, 1180px, calc((100vh - 4rem) * 1780 / 966));
-  aspect-ratio: 1780 / 966;
-  perspective: 2400px;
+  flex: 1;
+  overflow: hidden;
+  container-type: size;
+  background: linear-gradient(180deg, #c3e9f7 0%, #def4fb 45%, #f3fbfe 72%);
 }
 
-.popup-leaf {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: var(--card-paper);
-}
-
-/* The fold sits where the mockup splits: 44.2% from the left. */
-.popup-leaf-left {
-  left: 0;
-  width: 44.2%;
-  border-radius: var(--card-radius) 0 0 var(--card-radius);
-  box-shadow:
-    inset -14px 0 16px -16px rgba(0, 0, 0, 0.3),
-    0 24px 50px rgba(0, 0, 0, 0.28);
-}
-
-.popup-leaf-right {
-  left: 44.2%;
-  right: 0;
-  background: none;
-  transform-origin: left center;
-  transform-style: preserve-3d;
-}
-
-.leaf-face {
+/* Halftone dots across the sky, fading out towards the horizon. */
+.loader-scene::before {
+  content: '';
   position: absolute;
   inset: 0;
-  background: var(--card-paper);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  background: radial-gradient(circle, rgba(66, 165, 214, 0.3) 1px, transparent 1.5px) 0 0 / 6px 6px;
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.55) 55%, transparent 78%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.55) 55%, transparent 78%);
+  pointer-events: none;
 }
 
-.leaf-front {
-  border-radius: 0 var(--card-radius) var(--card-radius) 0;
+.loader-cloud {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 68%);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+.loader-cloud-1 {
+  left: -6%;
+  top: 4%;
+  width: 46%;
+  height: 32%;
+}
+
+.loader-cloud-2 {
+  right: -8%;
+  top: 2%;
+  width: 52%;
+  height: 38%;
+}
+
+.loader-cloud-3 {
+  left: 30%;
+  top: 56%;
+  width: 50%;
+  height: 18%;
+}
+
+.loader-hills {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 38%;
+}
+
+/* Title and button on the left. */
+.loader-copy {
+  position: absolute;
+  z-index: 1;
+  left: 4cqw;
+  top: 0;
+  bottom: 0;
+  width: 46cqw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 4cqh;
+}
+
+.loader-title {
+  display: block;
+  width: min(100%, 92cqh * 920 / 560);
+  height: auto;
+}
+
+.loader-button {
+  margin-left: 9%;
+  padding: 0.75em 2em;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f9c35e 0%, #f2a03a 55%, #e2862a 100%);
   box-shadow:
-    inset 14px 0 16px -16px rgba(0, 0, 0, 0.3),
-    0 24px 50px rgba(0, 0, 0, 0.28);
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    0 6px 12px rgba(150, 80, 10, 0.35);
+  color: #fff;
+  font-family: 'Poppins', 'Montserrat', sans-serif;
+  font-size: clamp(1rem, min(1.6cqw, 3.4cqh), 1.6rem);
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(120, 60, 0, 0.45);
+  cursor: pointer;
 }
 
-/* The outside of the card, seen while it's still folded shut. */
-.leaf-back {
-  border-radius: 0 var(--card-radius) var(--card-radius) 0;
-  transform: rotateY(180deg);
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.6), transparent 45%),
-    #f3ecd9;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+.loader-button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+/* The bowl on the right, running off the bottom edge behind the red border. */
+.loader-bowl {
+  position: absolute;
+  right: 2cqw;
+  top: 18cqh;
+  height: min(94cqh, 49cqw * 1060 / 1110);
+  aspect-ratio: 1110 / 1060;
+}
+
+.loader-bowl img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 18px 24px rgba(60, 20, 10, 0.3));
+}
+
+/* Tall screens (phones): title and button on top, bowl below. */
+@media (max-aspect-ratio: 1 / 1) {
+  .loader-copy {
+    left: 6cqw;
+    right: 6cqw;
+    width: auto;
+    bottom: auto;
+    top: 6cqh;
+    align-items: center;
+    gap: 3cqh;
+  }
+
+  .loader-title {
+    width: min(100%, 40cqh * 920 / 560);
+  }
+
+  .loader-button {
+    margin-left: 0;
+    font-size: clamp(1rem, 4.4cqw, 1.4rem);
+  }
+
+  .loader-bowl {
+    right: auto;
+    left: 50%;
+    translate: -50% 0;
+    top: auto;
+    bottom: -6cqh;
+    height: min(56cqh, 96cqw * 1060 / 1110);
+  }
+}
+
+/* ---------- Pop-ups: shared ---------- */
+html.popup-open,
+html.is-swiping {
+  overflow: hidden;
 }
 
 .popup-close {
@@ -178,8 +283,554 @@ html.popup-open {
   background: rgba(0, 0, 0, 0.12);
 }
 
-/* Positions measured from the mockup: badge on the left, noodles on the right. */
-.popup-panel .popup-badge {
+/* ---------- Locations pop-up: packet tears open, a ramen puck pops out and becomes the card ---------- */
+.packet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.packet-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(30, 24, 10, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+/* A copy of the basket image clipped to the packet, popped up in place. */
+.packet-flight {
+  position: fixed;
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 20px rgba(0, 0, 0, 0.35));
+}
+
+.packet-flight-clip {
+  position: absolute;
+  inset: 0;
+}
+
+.packet-flight-clip img {
+  position: absolute;
+  display: block;
+}
+
+/* Body and the two top flaps of the torn packet, each its own clipped layer. */
+.packet-piece {
+  position: absolute;
+  inset: 0;
+}
+
+/* Pale inner layer of the plastic, showing along the ripped edges. */
+.packet-torn-edge {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(#f4f1ea, #d9d4ca);
+}
+
+/* Shadowy inside of the bag, seen through the opening. */
+.packet-inside {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, #4a3020, #1f140c 60%);
+}
+
+/* The nest of dried ramen that pops out. */
+.loc-nest {
+  position: fixed;
+  z-index: 4;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.35));
+}
+
+/* The card's ramen background: copies of the noodle nest, in two offset
+   grids so the gaps between one grid's nests are filled by the other's. */
+.loc-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 22px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
+  background:
+    radial-gradient(ellipse at center, transparent 45%, rgba(120, 70, 5, 0.3)),
+    url('./assets/noodle-nest.png') 0 0 / 230px 223px,
+    url('./assets/noodle-nest.png') 115px 111px / 230px 223px,
+    #f2cd6e;
+}
+
+.packet-scroller {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  overflow-y: auto;
+}
+
+/* Same proportions as the Locations mockup (1551 × 888), and about the
+   size of the other pop-ups so the page still shows around it. */
+.packet-panel {
+  position: relative;
+  container-type: inline-size;
+  width: min(86vw, 1060px, calc((100dvh - 9rem) * 1551 / 888));
+  aspect-ratio: 1551 / 888;
+}
+
+/* The packet and info card sit inside a margin of ramen. */
+.loc-content {
+  position: absolute;
+  inset: 4% 3%;
+}
+
+.loc-packet {
+  position: absolute;
+  left: 3.2%;
+  top: 19.1%;
+  width: 31.3%;
+  aspect-ratio: 485 / 545;
+  container-type: inline-size;
+  filter: drop-shadow(0 1.4cqw 1.8cqw rgba(0, 0, 0, 0.35));
+}
+
+.loc-packet-img,
+.loc-info-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Mint label, laid exactly over the one printed in the artwork. */
+.loc-label {
+  position: absolute;
+  left: 62.5%;
+  top: 58.7%;
+  width: 45.5%;
+  height: 13.6%;
+  translate: -50% -50%;
+  rotate: 4deg;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 3cqw;
+  background: #f0f6eb;
+  font-family: 'Fredoka', 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 7.6cqw;
+  line-height: 1;
+  color: #f3cf5b;
+  -webkit-text-stroke: 0.6cqw #3b5f1a;
+  paint-order: stroke fill;
+}
+
+.loc-info {
+  position: absolute;
+  left: 48.4%;
+  top: 3.4%;
+  width: 45.9%;
+  aspect-ratio: 712 / 830;
+  container-type: inline-size;
+  filter: drop-shadow(0 1.4cqw 2.4cqw rgba(0, 0, 0, 0.3));
+}
+
+/* Cream card, laid over the one printed on the faded packet. */
+.loc-card {
+  position: absolute;
+  left: 50.3%;
+  top: 50.4%;
+  width: 78.4%;
+  height: 82.4%;
+  translate: -50% -50%;
+  rotate: 0.7deg;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 5%;
+  border-radius: 2.4cqw;
+  background: #ffefdc;
+  text-align: center;
+  font-family: 'Poppins', 'Montserrat', sans-serif;
+  font-size: 3.55cqw;
+  line-height: 1.38;
+  color: #7a3d10;
+}
+
+.loc-card p {
+  margin: 0;
+}
+
+.loc-card p + p {
+  margin-top: 1.3em;
+}
+
+.loc-close {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* ---------- Contact pop-up: an egg cracks on the carton and its yolk becomes the card ---------- */
+.egg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+/* A copy of the basket image, clipped to one egg, flying out of the carton. */
+.egg-flight {
+  position: fixed;
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.35));
+}
+
+.egg-piece,
+.egg-shell {
+  position: absolute;
+  inset: 0;
+}
+
+.egg-shell img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.egg-crack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.egg-crack path {
+  fill: none;
+  stroke: #5a3519;
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* The raw egg that drops out of the shell. */
+.egg-blob {
+  position: fixed;
+  z-index: 4;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.3));
+}
+
+/* Same proportions as the Contact mockup (1791 x 886) plus a margin, and
+   about the size of the other pop-ups. */
+.egg-panel {
+  position: relative;
+  width: min(86vw, 1100px, calc((100dvh - 9rem) * 1.957));
+  aspect-ratio: 1.957;
+}
+
+/* Soft yolk-yellow card, grown out of the egg's yolk. */
+.egg-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 26% 20%, rgba(255, 255, 255, 0.55), transparent 35%),
+    radial-gradient(ellipse at 50% 45%, #fff3cc 0%, #ffe39a 60%, #fbcf6a 100%);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
+}
+
+/* The egg artwork; the text sits on it in the spots measured from the mockup. */
+.contact-art {
+  position: absolute;
+  inset: 4% 2.5%;
+  container-type: inline-size;
+}
+
+.contact-art-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.contact-label {
+  position: absolute;
+  left: 21.5%;
+  top: 27.6%;
+  translate: -50% -50%;
+  rotate: -3deg;
+  margin: 0;
+  white-space: nowrap;
+  font-family: 'Fredoka', 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 5.1cqw;
+  line-height: 1;
+  color: #f3cf5b;
+  -webkit-text-stroke: 0.45cqw #3b5f1a;
+  paint-order: stroke fill;
+}
+
+.contact-bubble {
+  position: absolute;
+  translate: -50% -50%;
+  margin: 0;
+  text-align: center;
+  font-family: 'Poppins', 'Montserrat', sans-serif;
+  font-size: 1.3cqw;
+  line-height: 1.38;
+  color: #111;
+}
+
+.contact-bubble-1 {
+  left: 44.5%;
+  top: 71%;
+  width: 11.2%;
+}
+
+.contact-bubble-2 {
+  left: 57.1%;
+  top: 78.6%;
+  width: 14%;
+}
+
+.contact-links {
+  position: absolute;
+  left: 72.7%;
+  top: 63.1%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: 'Poppins', 'Montserrat', sans-serif;
+  font-size: 1.3cqw;
+  color: #111;
+}
+
+.contact-links li {
+  display: flex;
+  align-items: center;
+  gap: 0.55cqw;
+  height: 2.6cqw;
+  white-space: nowrap;
+}
+
+.contact-icon {
+  flex: none;
+  width: 2.1cqw;
+  height: 2.1cqw;
+}
+
+.egg-close {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Data & Visuals pop-up: a knife slices the mushrooms, the card opens from the cut ---------- */
+.mush-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+/* The mushrooms (mushrooms.png), lifted out of the basket. */
+.mush-flight {
+  position: fixed;
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.35));
+}
+
+.mush-piece {
+  position: absolute;
+  inset: 0;
+}
+
+/* Pale flesh in the mushrooms' exact outline, peeking out along the cut. */
+.mush-flesh {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(#fbf3e2, #eadcc3);
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+}
+
+.mush-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mush-slash {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #fff 15%, #fff 85%, transparent);
+  box-shadow: 0 0 10px 3px rgba(255, 255, 255, 0.85);
+  transform-origin: left center;
+}
+
+/* Knife: its blade edge (73% down the drawing) runs along the cut. */
+.mush-knife {
+  position: absolute;
+  width: 115%;
+  aspect-ratio: 300 / 60;
+  translate: 0 -73.3%;
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.35));
+}
+
+/* Same proportions as the Data & Visuals mockup (1732 x 966) plus a margin,
+   and about the size of the other pop-ups. */
+.mush-panel {
+  position: relative;
+  width: min(86vw, 1080px, calc((100dvh - 9rem) * 1.755));
+  aspect-ratio: 1.755;
+}
+
+/* Light card with faded cut-mushroom insides scattered behind the content. */
+.mush-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 26px;
+  background: #fbf4e8;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
+}
+
+.mush-inside {
+  position: absolute;
+  opacity: 0.4;
+}
+
+.mush-inside-1 {
+  left: -5%;
+  top: -12%;
+  width: 34%;
+  rotate: -16deg;
+}
+
+.mush-inside-2 {
+  right: -4%;
+  top: 38%;
+  width: 31%;
+  rotate: 18deg;
+}
+
+.mush-inside-3 {
+  left: 30%;
+  top: 52%;
+  width: 26%;
+  rotate: -8deg;
+}
+
+.mush-inside-4 {
+  left: 52%;
+  top: -22%;
+  width: 24%;
+  rotate: 164deg;
+}
+
+.data-art {
+  position: absolute;
+  inset: 4% 3%;
+}
+
+.data-art-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mush-close {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* ---------- About Us pop-up: the block is boiled in a pot, then served ---------- */
+.pot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+/* The pot is drawn in two layers so the noodle block can drop between them. */
+.pot-layer {
+  position: fixed;
+  pointer-events: none;
+}
+
+.pot-layer svg {
+  display: block;
+  overflow: visible;
+}
+
+.pot-back {
+  z-index: 2;
+}
+
+.pot-front {
+  z-index: 4;
+  filter: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.35));
+}
+
+.pot-rattle {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 90%;
+}
+
+.pot-splash,
+.pot-steam {
+  position: absolute;
+  inset: 0;
+}
+
+.pot-block {
+  position: fixed;
+  z-index: 3;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.3));
+}
+
+.pot-block img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Same proportions as the About Us mockup (1780 x 966), about the size of
+   the other pop-ups. */
+.about-panel {
+  position: relative;
+  container-type: inline-size;
+  width: min(86vw, 1080px, calc((100dvh - 9rem) * 1780 / 966));
+  aspect-ratio: 1780 / 966;
+}
+
+.about-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  background: #fffcf3;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
+}
+
+/* Badge on the left, measured from the mockup. */
+.about-panel .about-badge {
   top: 32.6%;
   left: 4%;
   width: 38.8cqw;
@@ -187,45 +838,192 @@ html.popup-open {
   box-shadow: 0 0.8cqw 1.4cqw rgba(0, 0, 0, 0.25);
 }
 
-.popup-panel .popup-badge h2 {
+.about-panel .about-badge h2 {
   font-size: 6.1cqw;
   -webkit-text-stroke: 0.24cqw #2d4415;
 }
 
-.popup-panel .popup-noodles {
+/* Cooked noodles on the right, with the text on their yellow disc. */
+.about-nest {
   position: absolute;
-  top: 1%;
-  left: 0;
+  left: 44.1%;
+  top: 1.5%;
+  width: 56%;
+  aspect-ratio: 996 / 936; /* matches noodles.png */
+}
+
+.about-nest-img {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  margin-left: 0;
+  height: 100%;
 }
 
-.popup-panel .popup-brick {
+.about-text {
   position: absolute;
-  top: 5.5cqw;
-  left: 2cqw;
-  width: 40cqw;
+  /* Centred on the yellow disc (51.6% / 50.3% of the image). */
+  left: 51.6%;
+  top: 50.3%;
+  width: 53%;
+  translate: -50% -50%;
+  text-align: center;
+  font-family: 'Poppins', 'Montserrat', sans-serif;
+  font-size: 1.4cqw;
+  line-height: 1.48;
+  color: #7a3d10;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.35);
 }
 
-.popup-panel .popup-frame {
+.about-text p {
+  margin: 0 0 1em;
+}
+
+.about-text p:last-child {
+  margin-bottom: 0;
+}
+
+.about-text .lead {
+  font-weight: 700;
+}
+
+.about-close {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* ---------- How it Works pop-up: the knife chops the onion, the bits become the card ---------- */
+.onion-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+/* The whole onion (onion.png), popped up out of the basket. */
+.onion-flight {
+  position: fixed;
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.35));
+}
+
+.onion-piece {
   position: absolute;
-  top: 0.9cqw;
-  left: 5.4cqw;
-  width: 45cqw;
+  inset: 0;
+}
+
+.onion-piece img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Same knife as the mushrooms, a little longer for the wider leaves. */
+.onion-knife {
+  width: 130%;
+}
+
+/* A slice of green onion: a green ring around a pale centre. */
+.onion-bit {
+  position: fixed;
+  z-index: 4;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--core) 0 38%, var(--ring) 42% 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(40, 80, 20, 0.45),
+    0 2px 3px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+/* Same proportions as the How it Works mockup (1784 x 1001) plus a margin,
+   about the size of the other pop-ups. */
+.how-panel {
+  position: relative;
+  width: min(86vw, 1080px, calc((100dvh - 9rem) * 1.744));
+  aspect-ratio: 1.744;
+}
+
+/* Pale green card. Its background is the chopped bits (settled where they
+   landed) and a couple of faded whole onions. */
+.how-bg {
+  position: absolute;
+  inset: 0;
+  isolation: isolate; /* keep the settled bits behind the content */
+  overflow: hidden;
+  border-radius: 22px;
+  background: #f1f7ea;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
+}
+
+.how-bg-bit {
+  position: absolute;
+  z-index: auto;
+  translate: -50% -50%;
+  box-shadow: inset 0 0 0 1px rgba(40, 80, 20, 0.35);
+}
+
+.how-bg-onion {
+  position: absolute;
+  height: 115%;
+  opacity: 0.14;
+  filter: blur(1px) saturate(0.8);
+  pointer-events: none;
+}
+
+/* One leaning in from the bottom-left, one across the gap in the middle. */
+.how-bg-onion-1 {
+  left: -6%;
+  top: 22%;
+  rotate: -38deg;
+}
+
+.how-bg-onion-2 {
+  left: 37%;
+  top: -12%;
+  rotate: 16deg;
+}
+
+.how-content {
+  position: absolute;
+  inset: 4% 3%;
+  container-type: inline-size;
+}
+
+/* Brick on the left, steps on the right, measured from the mockup. */
+.how-content .how-brick {
+  position: absolute;
+  left: 0.6%;
+  top: 9.5%;
+  width: 40.4%;
+}
+
+.how-content .how-frame {
+  position: absolute;
+  left: 52.1%;
+  top: 0.5%;
+  width: 47.6%;
+}
+
+.how-close {
+  background: rgba(255, 255, 255, 0.85);
 }
 
 /* ---------- Printer slot ---------- */
+/* Every size in the receipt is in em, off this one font size. It follows
+   the window width, but also shrinks on short windows so the whole receipt
+   (about 39em tall) always fits on screen. */
 .printer {
   position: relative;
   width: 100%;
-  max-width: 460px;
+  max-width: 28.5em;
+  font-size: min(clamp(0.95rem, 1.35vw, 1.15rem), 2.3vh);
 }
 
 .slot {
   position: relative;
   z-index: 2;
-  height: 84px;
-  border-radius: 10px;
+  height: 4.6em;
+  border-radius: 0.55em;
   background: linear-gradient(
     to bottom,
     #e9e9e9 0%,
@@ -237,7 +1035,7 @@ html.popup-open {
   box-shadow:
     inset 0 2px 1px rgba(255, 255, 255, 0.9),
     inset 0 -3px 4px rgba(0, 0, 0, 0.25),
-    0 6px 10px rgba(0, 0, 0, 0.2);
+    0 8px 14px rgba(0, 0, 0, 0.35);
 }
 
 .slit {
@@ -245,7 +1043,7 @@ html.popup-open {
   left: 9%;
   right: 9%;
   top: 40%;
-  height: 7px;
+  height: 0.38em;
   border-radius: 4px;
   background: linear-gradient(#1b1b1b, #444);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -255,55 +1053,64 @@ html.popup-open {
 .paper-window {
   position: relative;
   z-index: 1;
-  margin: -46px auto 0;
-  width: 82%;
+  margin: -2.5em auto 0;
+  width: 80%;
   overflow: hidden;
-  padding-bottom: 12px; /* room for the paper's shadow */
+  padding-bottom: 0.9em; /* room for the paper's shadow */
 }
 
-/* ---------- Paper ---------- */
+/* ---------- Receipt paper (crumpled) ---------- */
 .paper {
   position: relative;
-  padding: 4.5rem 1.6rem 2rem;
+  padding: 3.9em 1.4em 2.25em;
   color: var(--ink);
+  /* Creases + soft shading over a lit noise texture for the crumpled look. */
   background:
-    linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.55) 46%, transparent 52%),
-    linear-gradient(200deg, transparent 55%, rgba(0, 0, 0, 0.04) 60%, transparent 66%),
-    linear-gradient(170deg, transparent 20%, rgba(255, 255, 255, 0.5) 24%, transparent 29%),
-    radial-gradient(ellipse at 30% 80%, rgba(0, 0, 0, 0.035), transparent 60%),
+    linear-gradient(112deg, transparent 38%, rgba(255, 255, 255, 0.7) 40%, rgba(0, 0, 0, 0.035) 41.5%, transparent 46%),
+    linear-gradient(64deg, transparent 58%, rgba(0, 0, 0, 0.04) 60%, rgba(255, 255, 255, 0.6) 61%, transparent 65%),
+    linear-gradient(168deg, transparent 22%, rgba(255, 255, 255, 0.55) 25%, rgba(0, 0, 0, 0.03) 26.5%, transparent 31%),
+    linear-gradient(-28deg, transparent 72%, rgba(0, 0, 0, 0.035) 74%, rgba(255, 255, 255, 0.55) 75%, transparent 79%),
+    radial-gradient(ellipse at 25% 85%, rgba(0, 0, 0, 0.05), transparent 55%),
+    radial-gradient(ellipse at 80% 15%, rgba(255, 255, 255, 0.7), transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='4' seed='7'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='2.2'%3E%3CfeDistantLight azimuth='135' elevation='58'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)' opacity='0.5'/%3E%3C/svg%3E"),
     var(--paper);
-  box-shadow: 0 6px 10px -4px rgba(0, 0, 0, 0.18);
+  background-size: auto, auto, auto, auto, auto, auto, 300px 300px, auto;
+  box-shadow: 0 10px 18px -6px rgba(0, 0, 0, 0.4);
 }
 
-/* Lighter strip right under the slot, as in the mockup. */
+/* Brighter strip right under the slot, as in the mockup. */
 .paper::before {
   content: '';
   position: absolute;
   inset: 0 0 auto;
-  height: 46px;
+  height: 2.5em;
   background: linear-gradient(#fafafa, #f2f2f2);
 }
 
 .brand {
-  margin: 0 0 2.2rem;
+  margin: 0;
   text-align: center;
-  font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+  font-size: 1.6em;
   font-weight: 700;
   letter-spacing: 0.01em;
+}
+
+.tagline {
+  margin: 0.2em 0 1.75em;
+  text-align: center;
 }
 
 /* ---------- Line items ---------- */
 .items {
   list-style: none;
-  margin: 0 0 1rem;
+  margin: 0 0 0.9em;
   padding: 0;
 }
 
 .line {
   display: flex;
   align-items: baseline;
-  gap: 0.35rem;
-  font-size: clamp(0.95rem, 1.35vw, 1.15rem);
+  gap: 0.3em;
   line-height: 1.75;
   color: inherit;
   text-decoration: none;
@@ -322,9 +1129,18 @@ html.popup-open {
   opacity: 0.85;
 }
 
+/* Receipt lines are buttons; strip the browser's button look. */
 .item-link {
   position: relative;
+  width: 100%;
+  padding: 0;
+  border: 0;
   border-radius: 4px;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  cursor: pointer;
   transition: color 0.2s ease;
 }
 
@@ -354,21 +1170,20 @@ html.popup-open {
 }
 
 .totals .total .line-label {
-  padding-left: 2.5rem;
+  padding-left: 2.2em;
 }
 
 /* ---------- Footer of receipt ---------- */
 .thanks {
-  margin: 2.2rem 0 2rem;
+  margin: 1.9em 0 1.75em;
   text-align: center;
-  font-size: clamp(0.95rem, 1.35vw, 1.15rem);
   line-height: 1.6;
 }
 
 .barcode {
   display: flex;
   justify-content: center;
-  height: 80px;
+  height: 4.35em;
 }
 
 .barcode span {
@@ -384,35 +1199,12 @@ html.popup-open {
 }
 
 
-/* ---------- Content pages ---------- */
-.page {
-  min-height: 100vh;
-  padding: 2rem 0;
-}
-
-/* ---------- About Us: noodle nest with the badge stuck on its top-left ---------- */
-.about {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.noodle-card {
-  position: relative;
-  /* Everything inside sizes off the card's width (cqw units). */
-  container-type: inline-size;
-  width: min(100%, 720px);
-  aspect-ratio: 996 / 936; /* matches noodles.jpg */
-  margin-left: 6%;
-}
-
+/* ---------- Pop-up art: shared pieces ---------- */
 .noodle-img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  /* Lets the white background of the artwork disappear into the page. */
-  mix-blend-mode: multiply;
   user-select: none;
 }
 
@@ -445,66 +1237,20 @@ html.popup-open {
   transform: rotate(-3deg);
 }
 
-/* Text sits inside the yellow disc (centre 51.6% / 50.3% of the image). */
-.noodle-text {
-  position: absolute;
-  left: 51.6%;
-  top: 50.3%;
-  width: 53%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  font-family: 'Poppins', 'Montserrat', sans-serif;
-  font-size: clamp(0.78rem, 2.5cqw, 1.15rem);
-  line-height: 1.48;
-  color: #7a3d10;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.35);
-}
 
-.noodle-text p {
-  margin: 0 0 1em;
-}
-
-.noodle-text p:last-child {
-  margin-bottom: 0;
-}
-
-.noodle-text .lead {
-  font-weight: 700;
-}
-
-
-/* ---------- How it Works: noodle brick + framed steps ---------- */
-.how {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
+/* ---------- Pop-up art: How it Works (noodle brick + framed steps) ---------- */
 .noodle-brick {
   position: relative;
   container-type: inline-size;
   width: min(55%, 400px);
-  aspect-ratio: 720 / 780; /* matches noodle-brick.jpg */
+  aspect-ratio: 720 / 780; /* matches noodle-brick.png */
 }
 
 .noodle-frame {
   position: relative;
   container-type: inline-size;
   width: min(100%, 620px);
-  aspect-ratio: 850 / 990; /* matches noodle-frame.jpg */
-}
-
-/* On the page the frame tucks up under the brick, scrapbook style. */
-.how .noodle-brick {
-  z-index: 1;
-  /* z-index isolates the brick, so blend the whole thing to drop its white box. */
-  mix-blend-mode: multiply;
-}
-
-.how .noodle-frame {
-  align-self: flex-end;
-  width: min(100%, 560px);
-  margin-top: -18%;
+  aspect-ratio: 850 / 990; /* matches noodle-frame.png */
 }
 
 /* Sits exactly over the label area of the artwork. */
@@ -569,70 +1315,34 @@ html.popup-open {
 }
 
 
-/* ---------- Small screens: receipt on top, nothing pinned ---------- */
+/* ---------- Small screens: receipt on top, basket below; page scrolls ---------- */
 @media (max-width: 800px) {
   .layout {
     grid-template-columns: 1fr;
+    height: auto;
     padding: 0 16px;
   }
 
   .receipt-rail {
-    position: static;
     justify-self: center;
     width: 100%;
     max-width: 460px;
     padding-top: 2rem;
   }
 
+  .printer {
+    font-size: clamp(0.95rem, 1.35vw, 1.15rem);
+  }
+
   .home {
-    min-height: auto;
     padding: 1rem 0 2rem;
   }
 
-  .page {
-    min-height: auto;
-    padding: 3rem 0;
-  }
-
-  .about {
-    overflow-x: clip; /* keep the badge from widening the page */
-  }
-
-  /* Too narrow to fit the text in the disc at a readable size, so the
-     nest stretches to fit the text instead. */
-  .noodle-card {
-    aspect-ratio: auto;
-    margin-left: 0;
-    padding: 24% 15% 22%;
-  }
-
-  .noodle-text {
-    position: relative;
-    left: auto;
-    top: auto;
-    width: auto;
-    transform: none;
-    font-size: 0.85rem;
-  }
-
-  .badge {
-    left: 1%;
-    top: -4%;
-    width: 48cqw;
-  }
-
-  .badge h2 {
-    font-size: 7.4cqw;
-  }
-
-  /* Like the About nest, the frame stretches to fit the steps. */
+  /* Too narrow for the steps at a readable size inside the artwork, so the
+     frame stretches to fit them instead. */
   .noodle-frame {
     aspect-ratio: auto;
     padding: 15% 9% 13%;
-  }
-
-  .how .noodle-frame {
-    margin-top: -12%;
   }
 
   .how-card {
@@ -646,53 +1356,125 @@ html.popup-open {
   }
 }
 
-/* ---------- Small screens: pop-up stacks badge over noodles ---------- */
+/* ---------- Small screens: Locations pop-up stacks packet over card ---------- */
 @media (max-width: 800px) {
-  .popup-panel {
+  .packet-scroller {
+    place-items: start center;
+  }
+
+  .packet-panel {
     width: 94vw;
     aspect-ratio: auto;
-    max-height: 88vh;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
   }
 
-  /* Halves stack; the bottom half unfolds downward from a hinge at its top. */
-  .popup-leaf {
+  .loc-content {
     position: relative;
     inset: auto;
-    width: 100%;
-  }
-
-  .popup-leaf-left {
     display: flex;
-    justify-content: center;
-    padding: 4rem 0 2.5rem;
-    border-radius: 22px 22px 0 0;
-    box-shadow:
-      inset 0 -12px 14px -14px rgba(0, 0, 0, 0.3),
-      0 20px 40px rgba(0, 0, 0, 0.25);
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 3.5rem 0.75rem 1rem;
   }
 
-  .popup-leaf-right {
-    transform-origin: top center;
-  }
-
-  .leaf-front {
+  .loc-packet {
     position: relative;
-    padding: 0 0.75rem 1.5rem;
-    border-radius: 0 0 22px 22px;
-    box-shadow:
-      inset 0 12px 14px -14px rgba(0, 0, 0, 0.3),
-      0 20px 40px rgba(0, 0, 0, 0.25);
+    left: auto;
+    top: auto;
+    width: 62%;
   }
 
-  .leaf-back {
-    border-radius: 0 0 22px 22px;
-    transform: rotateX(180deg);
+  /* The faded packet stretches to fit the text. */
+  .loc-info {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    aspect-ratio: auto;
+    padding: 12% 8%;
   }
 
-  .popup-panel .popup-badge {
+  .loc-card {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: auto;
+    height: auto;
+    translate: none;
+    padding: 1.5rem 1rem;
+    border-radius: 14px;
+    font-size: 0.9rem;
+  }
+
+}
+
+/* ---------- Small screens: Contact art on top, text readable below it ---------- */
+@media (max-width: 800px) {
+  .egg-panel {
+    width: 94vw;
+    aspect-ratio: auto;
+  }
+
+  .contact-art {
+    position: relative;
+    inset: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 3.5rem 1rem 1.5rem;
+  }
+
+  .contact-art-img {
+    position: static;
+    height: auto;
+  }
+
+  /* The label stays on the art; it's measured against the image's box. */
+  .contact-label {
+    top: calc(3.5rem + (100cqw - 2rem) * 886 / 1791 * 0.276);
+    left: calc(1rem + (100cqw - 2rem) * 0.215);
+    font-size: calc((100cqw - 2rem) * 0.051);
+  }
+
+  .contact-bubble,
+  .contact-links {
+    position: static;
+    translate: none;
+    width: auto;
+    font-size: 0.95rem;
+  }
+
+  .contact-links li {
+    gap: 0.5rem;
+    height: 2rem;
+  }
+
+  .contact-icon {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+}
+
+/* ---------- Small screens: Data & Visuals card fills the width ---------- */
+@media (max-width: 800px) {
+  .mush-panel {
+    width: 94vw;
+  }
+}
+
+/* ---------- Small screens: About badge over the noodles, text readable ---------- */
+@media (max-width: 800px) {
+  .about-panel {
+    width: 94vw;
+    aspect-ratio: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3.5rem 0.75rem 1rem;
+  }
+
+  .about-panel .about-badge {
     position: relative;
     top: auto;
     left: auto;
@@ -700,29 +1482,60 @@ html.popup-open {
     border-width: 2.4cqw;
   }
 
-  .popup-panel .popup-badge h2 {
+  .about-panel .about-badge h2 {
     font-size: 9.6cqw;
     -webkit-text-stroke: 0.4cqw #2d4415;
   }
 
-  .popup-panel .popup-noodles {
+  /* The noodles stretch to fit the text. */
+  .about-nest {
     position: relative;
-    top: auto;
     left: auto;
+    top: auto;
     width: 100%;
+    aspect-ratio: auto;
+    margin-top: -0.5rem;
+    padding: 24% 15% 22%;
   }
 
-  .popup-panel .popup-brick {
+  .about-text {
     position: relative;
-    top: auto;
     left: auto;
+    top: auto;
+    width: auto;
+    translate: none;
+    font-size: 0.85rem;
+  }
+}
+
+/* ---------- Small screens: How it Works brick over the steps ---------- */
+@media (max-width: 800px) {
+  .how-panel {
+    width: 94vw;
+    aspect-ratio: auto;
+  }
+
+  .how-content {
+    position: relative;
+    inset: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 3.5rem 0.75rem 1rem;
+  }
+
+  .how-content .how-brick {
+    position: relative;
+    left: auto;
+    top: auto;
     width: 70%;
   }
 
-  .popup-panel .popup-frame {
+  .how-content .how-frame {
     position: relative;
-    top: auto;
     left: auto;
+    top: auto;
     width: 100%;
   }
 }

@@ -18,10 +18,11 @@
   box-sizing: border-box;
 }
 
+/* The whole page sits on a wooden tabletop. */
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg);
+  background: #d9a36a url('./assets/wood.jpg') top center / 100% auto repeat-y;
 }
 
 #root {
